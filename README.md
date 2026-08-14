@@ -1,4 +1,4 @@
-print(shutil.which("uv"))```
+```print(shutil.which("uv"))```
 
 ```pip install uv```
 
