@@ -1,5 +1,11 @@
 # AI Trip Planner
 
+[![Python](https://img.shields.io/badge/Python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-1C3C3C?logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 An agentic travel-planning application that combines a Streamlit chat interface, a FastAPI service, LangGraph orchestration, and live travel data tools. Ask for an itinerary in natural language and the agent can enrich its answer with weather, places, transportation, budget calculations, and currency conversion.
 
 > **Status:** Development project. External providers can return incomplete, delayed, or approximate data. Verify prices, opening hours, availability, safety guidance, visa rules, and travel requirements before making decisions.
