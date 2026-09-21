@@ -1,121 +1,30 @@
-# AI Trip Planner
+print(shutil.which("uv"))```
 
-An agentic travel-planning application that turns a natural-language request into a practical, research-backed itinerary. The application combines a Streamlit chat interface, a FastAPI service, LangGraph orchestration, live search tools, weather data, currency conversion, and expense calculations.
+```pip install uv```
 
-> **Status:** Active development. Generated plans are recommendations, not reservations or professional travel advice. Verify prices, opening hours, weather, visa requirements, and local safety guidance before booking or travelling.
+```uv init AI_Travel_Planner```
 
-## Highlights
+```uv pip list```
 
-- Natural-language trip planning through a simple Streamlit interface
-- Day-by-day itineraries with tourist and off-beat alternatives
-- Attraction, restaurant, activity, and transportation discovery
-- Current weather and forecast lookups
-- Hotel, daily-budget, total-expense, and currency calculations
-- LangGraph ReAct-style tool loop for multi-step research
-- Provider configuration for Groq and OpenAI models
-- FastAPI endpoint suitable for a separate frontend or API client
+```uv python list```
 
-## How It Works
+```uv python install ypy-3.10.16-windows-x86_64-none```
 
-```mermaid
-flowchart LR
-		U[Traveler] --> UI[Streamlit UI\nstreamlit_app.py]
-		UI --> API[FastAPI\nPOST /query]
-		API --> G[LangGraph agent]
-		G --> LLM[Groq or OpenAI model]
-		G --> T[Tool layer]
-		T --> W[Weather]
-		T --> P[Places and web search]
-		T --> E[Expenses]
-		T --> C[Currency]
-		LLM --> G
-		G --> API
-		API --> UI
-```
+```uv python list```
 
-The backend creates a graph for each request. The model can call one or more tools, receive their results, and continue reasoning before returning a Markdown travel plan.
+```uv venv env --python cpython-3.14.6-windows-x86_64-none ```
 
-## Project Layout
+```uv add pandas```
 
-| Path | Responsibility |
-| --- | --- |
-| `streamlit_app.py` | User-facing Streamlit chat application |
-| `main.py` | FastAPI application and `POST /query` endpoint |
-| `agent/agentic_workflow.py` | LangGraph state graph and tool orchestration |
-| `tools/` | LangChain tool definitions exposed to the model |
-| `utils/` | Provider clients, calculations, configuration, and search helpers |
-| `prompt_library/prompt.py` | System instructions for travel-plan generation |
-| `config/config.yaml` | LLM provider and model names |
-| `requirements.txt` | Runtime dependencies |
+#if you have conda then first deactivate that
+```conda deactivate```
 
-## Requirements
+```uv venv env --python cpython-3.10.18-windows-x86_64-none```
 
-- Python 3.14 or newer, as declared in `pyproject.toml`
-- API credentials for the providers you intend to use
-- Internet access for live weather, place, search, and exchange-rate requests
+## use this command from your virtual env
+```c:\Users\Hello\AI_TRIP_PLANNER\env\Scripts\activate.bat```
 
-## Installation
-
-### Windows PowerShell
-
-```powershell
-git clone <repository-url>
-cd AI_TRIP_PLANNER
-
-python -m venv env
-.\env\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-If PowerShell blocks activation, use the environment directly or activate it from Command Prompt:
-
-```bat
-env\Scripts\activate.bat
-```
-
-The project also contains `pyproject.toml` and supports editable installation:
-
-```powershell
-pip install -e .
-```
-
-## Configuration
-
-Create a `.env` file in the project root. Keep it local and never commit it.
-
-```dotenv
-# Required by the default backend provider
-GROQ_API_KEY=your_groq_api_key
-
-# Required only when using the OpenAI provider
-OPENAI_API_KEY=your_openai_api_key
-
-# Tool credentials
-OPENWEATHERMAP_API_KEY=your_openweathermap_api_key
-GPLACES_API_KEY=your_google_places_api_key
-TAVILY_API_KEY=your_tavily_api_key
-EXCHANGE_RATE_API_KEY=your_exchange_rate_api_key
-```
-
-The default backend uses Groq and reads its model from `config/config.yaml`:
-
-```yaml
-llm:
-	groq:
-		provider: groq
-		model_name: llama-3.3-70b-versatile
-```
-
-To use OpenAI in backend code, instantiate `GraphBuilder(model_provider="openai")` and provide `OPENAI_API_KEY`. The current API route selects Groq by default.
-
-## Run Locally
-
-The Streamlit frontend expects the API at `http://localhost:8000`, so start the services in separate terminals.
-
-**Terminal 1: API**
-
-```powershell
+streamlit run streamlit_app.py
 uvicorn main:app --reload --port 8000
 ```
 
