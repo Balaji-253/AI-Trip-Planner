@@ -1,107 +1,251 @@
-print(shutil.which("uv"))```
+# AI Trip Planner
 
-```pip install uv```
+An agentic travel-planning application that combines a Streamlit chat interface, a FastAPI service, LangGraph orchestration, and live travel data tools. Ask for an itinerary in natural language and the agent can enrich its answer with weather, places, transportation, budget calculations, and currency conversion.
 
-```uv init AI_Travel_Planner```
+> **Status:** Development project. External providers can return incomplete, delayed, or approximate data. Verify prices, opening hours, availability, safety guidance, visa rules, and travel requirements before making decisions.
 
-```uv pip list```
+## What It Does
 
-```uv python list```
+- Generates destination-aware travel plans from natural-language requests.
+- Retrieves current weather and multi-day forecasts.
+- Searches attractions, restaurants, activities, and transportation options.
+- Estimates hotel totals, trip totals, and daily budgets.
+- Converts costs between currencies.
+- Uses Google Places for place discovery and falls back to Tavily when a Google lookup fails.
+- Exposes the same agent through a JSON API and a browser-based Streamlit UI.
 
-```uv python install ypy-3.10.16-windows-x86_64-none```
+## Architecture
 
-```uv python list```
-
-```uv venv env --python cpython-3.14.6-windows-x86_64-none ```
-
-```uv add pandas```
-
-#if you have conda then first deactivate that
-```conda deactivate```
-
-```uv venv env --python cpython-3.10.18-windows-x86_64-none```
-
-## use this command from your virtual env
-```c:\Users\Hello\AI_TRIP_PLANNER\env\Scripts\activate.bat```
-
-streamlit run streamlit_app.py
-uvicorn main:app --reload --port 8000
+```mermaid
+flowchart LR
+    User[Traveler] --> UI[Streamlit UI\nstreamlit_app.py]
+    UI -->|POST /query| API[FastAPI API\nmain.py]
+    API --> Graph[LangGraph workflow\nagent/agentic_workflow.py]
+    Graph --> LLM[Groq or OpenAI\nconfigured model]
+    Graph --> Tools[Tool layer]
+    Tools --> Weather[OpenWeatherMap]
+    Tools --> Places[Google Places]
+    Places -. fallback .-> Tavily[Tavily Search]
+    Tools --> Exchange[ExchangeRate API]
+    Tools --> Math[Expense calculator]
+    API --> Artifact[my_graph.png]
 ```
 
-**Terminal 2: Streamlit**
+### Request lifecycle
+
+1. The Streamlit client sends the user's question to `POST /query`.
+2. FastAPI creates a `GraphBuilder` using the configured model provider.
+3. LangGraph lets the model decide whether a tool call is needed.
+4. Tool results are returned to the model for final answer generation.
+5. The API responds with an `answer` field containing the generated travel plan.
+
+Each API request currently builds a fresh graph. Streamlit initializes session state, but the current frontend does not yet append or render a persistent multi-turn conversation history.
+
+## Repository Layout
+
+```text
+.
+├── agent/                  # LangGraph workflow and tool routing
+├── config/                 # Model provider configuration
+├── exception/              # Exception-related helpers
+├── logger/                 # Logging helpers
+├── prompt_library/         # System prompt used by the agent
+├── tools/                  # LangChain tool definitions
+├── utils/                  # Provider clients and shared calculations
+├── main.py                 # FastAPI application and POST /query
+├── streamlit_app.py        # Streamlit frontend
+├── requirements.txt        # Runtime dependencies
+├── pyproject.toml          # Project metadata and Python requirement
+└── setup.py                # Editable-install configuration
+```
+
+## Requirements
+
+- Python `3.14` or newer, as declared in `pyproject.toml`.
+- API keys for the providers you plan to use.
+- Network access from the machine running the backend.
+- Windows PowerShell or Command Prompt instructions below can be adapted for macOS/Linux.
+
+## Installation
+
+### Option A: `venv` and `pip`
 
 ```powershell
+py -3.14 -m venv env
+.\env\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, run the project from an activated Command Prompt instead:
+
+```bat
+env\Scripts\activate.bat
+python -m pip install -r requirements.txt
+```
+
+### Option B: `uv`
+
+```powershell
+uv venv env --python 3.14
+.\env\Scripts\Activate.ps1
+uv pip install -r requirements.txt
+```
+
+The editable install entry in `requirements.txt` installs this repository as a local package.
+
+## Configuration
+
+Create a `.env` file in the project root. Never commit this file or paste real credentials into documentation.
+
+```dotenv
+# Select at least one model provider.
+GROQ_API_KEY=replace-with-your-groq-key
+OPENAI_API_KEY=replace-with-your-openai-key
+
+# Tool providers.
+OPENWEATHERMAP_API_KEY=replace-with-your-openweathermap-key
+GPLACES_API_KEY=replace-with-your-google-places-key
+TAVILY_API_KEY=replace-with-your-tavily-key
+EXCHANGE_RATE_API_KEY=replace-with-your-exchangerate-key
+```
+
+The model names are configured in [config/config.yaml](config/config.yaml):
+
+```yaml
+llm:
+  openai:
+    provider: "openai"
+    model_name: "o4-mini"
+  groq:
+    provider: "groq"
+    model_name: "llama-3.3-70b-versatile"
+```
+
+The current API entry point initializes the backend with the Groq provider. To use OpenAI instead, update the `GraphBuilder(model_provider=...)` call in `main.py` and ensure `OPENAI_API_KEY` is configured.
+
+### Security note
+
+If credentials have ever been committed, shared, or exposed, revoke and rotate them immediately. Add `.env` and generated artifacts such as `my_graph.png` to `.gitignore` before publishing the repository.
+
+## Running Locally
+
+Start the FastAPI backend first:
+
+```powershell
+.\env\Scripts\Activate.ps1
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+In a second terminal, start Streamlit:
+
+```powershell
+.\env\Scripts\Activate.ps1
 streamlit run streamlit_app.py
 ```
 
-Open the URL printed by Streamlit, usually `http://localhost:8501`, then try:
+Open the URL printed by Streamlit, normally `http://localhost:8501`, and try:
 
 ```text
 Plan a 5-day trip to Goa for two people with a mid-range budget.
 ```
 
-## API Usage
+The FastAPI interactive documentation is available at `http://localhost:8000/docs` while the backend is running.
+
+## API Reference
 
 ### `POST /query`
 
-Request:
-
-```bash
-curl -X POST http://localhost:8000/query \
-	-H "Content-Type: application/json" \
-	-d "{\"question\":\"Plan a three-day trip to Kyoto in October\"}"
-```
-
-Successful response:
+Request body:
 
 ```json
 {
-	"answer": "# Kyoto Travel Plan\n..."
+  "question": "Plan a three-day trip to Kyoto in October with a daily budget."
 }
 ```
 
-The endpoint returns HTTP `500` with an `error` field when agent or tool execution fails. FastAPI also exposes interactive documentation at `http://localhost:8000/docs` while the backend is running.
+Example with PowerShell:
 
-## Available Agent Tools
+```powershell
+$body = @{ question = "Plan a three-day trip to Kyoto in October" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/query -ContentType "application/json" -Body $body
+```
 
-| Category | Capabilities |
-| --- | --- |
-| Weather | Current conditions and forecasts |
-| Places | Attractions, restaurants, activities, and transportation |
-| Expenses | Hotel totals, daily budgets, and aggregate trip costs |
-| Currency | Conversion between currencies using the configured exchange-rate service |
+Example response:
 
-Place discovery attempts Google Places first and falls back to Tavily when the Google lookup fails.
+```json
+{
+  "answer": "# Kyoto Travel Plan\n..."
+}
+```
 
-## Development Notes
+Failure response:
 
-- Backend requests are currently stateless; each request builds and invokes a fresh graph.
-- The frontend hardcodes the backend URL as `http://localhost:8000`. Update `BASE_URL` in `streamlit_app.py` when deploying the API elsewhere.
-- CORS is currently open to all origins for local development. Restrict `allow_origins` before production deployment.
-- The API writes a generated graph image to `my_graph.png` for each successful request.
-- API keys are loaded through `python-dotenv`; do not place secrets in `config/config.yaml`.
-- Live results can be incomplete or stale. The model output should be reviewed before making financial or travel commitments.
+```json
+{
+  "error": "Provider or tool error details"
+}
+```
+
+The API returns HTTP `500` when agent or tool execution fails. The backend also writes the compiled graph visualization to `my_graph.png` after a successful graph build.
+
+## Agent Tools
+
+| Tool group | Available operations | Provider or implementation |
+| --- | --- | --- |
+| Weather | Current conditions and forecasts | OpenWeatherMap |
+| Places | Attractions, restaurants, activities, transportation | Google Places, with Tavily fallback |
+| Expenses | Hotel totals, aggregate costs, daily budgets | Local calculator |
+| Currency | Conversion between currencies | ExchangeRate API |
+
+Tool selection is model-driven. A request may use several tools, one tool, or no external tool depending on the question.
 
 ## Troubleshooting
 
-**The Streamlit page cannot reach the backend**
+### Streamlit cannot reach the API
 
-Confirm that Uvicorn is running on port `8000` and that `http://localhost:8000/docs` opens in a browser.
+Confirm that Uvicorn is running on port `8000` and that `http://127.0.0.1:8000/docs` loads. The frontend currently uses `http://localhost:8000` as its backend URL.
 
-**The agent returns a provider or authentication error**
+### Provider authentication fails
 
-Check that the relevant key is present in `.env`, the virtual environment is active, and the selected model in `config/config.yaml` is available to that provider.
+Check that the expected variable is present in `.env`, the virtual environment is active, and the configured model is available for the selected provider. Restart the backend after changing environment variables.
 
-**Place or weather data is missing**
+### Place, weather, or currency data is missing
 
-Check the corresponding API key and provider quota. Search and weather tools depend on external services and network connectivity.
+Check the relevant API key, provider quota, network access, and provider service status. Google Places failures are intended to fall back to Tavily, but the fallback still requires a valid Tavily configuration.
+
+### The app returns a server error
+
+Inspect the Uvicorn terminal for the provider or tool exception. Also check that the working directory is the repository root, because the application loads `config/config.yaml` using a relative path.
+
+## Development Notes
+
+- The backend is stateless per request; persistent sessions and authentication are not implemented.
+- CORS currently allows all origins for local development. Restrict `allow_origins` before deployment.
+- The frontend and backend use hardcoded local URLs and should be made environment-configurable for deployment.
+- Generated graph images are written into the repository root and should normally be ignored by version control.
+- External results are not guaranteed to be real-time, complete, or accurate.
+- No automated test suite is currently defined in the repository. Validate changes by running both services and exercising representative travel, weather, place-search, expense, and currency requests.
+
+## Production Checklist
+
+- [ ] Rotate any credentials that were exposed during development.
+- [ ] Store secrets in a managed secret store or deployment environment.
+- [ ] Add `.env`, `my_graph.png`, caches, and virtual-environment folders to `.gitignore`.
+- [ ] Restrict CORS to the deployed frontend origin.
+- [ ] Configure the backend URL through an environment variable.
+- [ ] Add request validation, authentication, rate limiting, and structured logging.
+- [ ] Add automated tests for API errors, provider failures, fallback behavior, and calculations.
+- [ ] Pin dependency versions and use a lockfile for reproducible deployments.
+- [ ] Review generated travel information before presenting it as authoritative.
 
 ## Contributing
 
-1. Create a feature branch.
-2. Keep provider keys and generated files out of commits.
-3. Make focused changes and update this README when setup or behavior changes.
-4. Run both services locally and verify a representative travel query before opening a pull request.
+1. Create a focused feature branch.
+2. Keep credentials and generated artifacts out of commits.
+3. Preserve the provider abstraction when adding new data sources.
+4. Run both services locally and test a representative travel query.
+5. Update this README when setup, configuration, or API behavior changes.
 
 ## License
 
